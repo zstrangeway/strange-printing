@@ -1,0 +1,23 @@
+# Secrets / local state — never commit
+*.secret
+secrets/
+.env
+.env.*
+moonraker.secrets
+*.pem
+*.key
+
+# Klipper/Moonraker runtime artifacts
+*.log
+*.bak
+*.bkp
+klippy.log*
+moonraker.log*
+printer-*.cfg          # timestamped autosave backups Klipper writes
+*.gcode
+*.3mf
+*.stl
+
+# OS noise
+.DS_Store
+Thumbs.db
