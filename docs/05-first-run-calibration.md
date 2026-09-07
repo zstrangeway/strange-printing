@@ -10,6 +10,30 @@ With Klipper connected but before homing:
 - `M112` (emergency stop) works from Fluidd — confirm the button is there and you know where it is.
 - Thermistors read plausible room temperature. A reading of `-14 C` or `500 C` means a wrong
   `sensor_type` or a disconnected thermistor — fix before heating anything.
+- **Keep a hand on the power switch for every first `G28`.** With the probe as Z endstop, a
+  miswired or unconfigured BLTouch means nothing stops the nozzle.
+
+### 0b. BLTouch check — do this BEFORE any Z homing
+
+The probe is the Z endstop now. If it doesn't work, the nozzle drives into the bed.
+
+```
+BLTOUCH_DEBUG COMMAND=pin_down     ; pin extends
+BLTOUCH_DEBUG COMMAND=pin_up       ; pin retracts
+BLTOUCH_DEBUG COMMAND=self_test    ; pin cycles repeatedly; reset to stop
+BLTOUCH_DEBUG COMMAND=reset
+```
+
+Then verify Klipper actually sees the trigger:
+
+```
+QUERY_PROBE                        ; -> probe: open
+```
+Push the pin up with a finger and re-run — it must report `probe: TRIGGERED`. If it doesn't,
+stop. Do not home Z. Check the PB0/PB1 wiring on the 5-pin header.
+
+A blinking BLTouch LED at power-on means an error state (usually the pin can't deploy, or a
+wiring fault). It should self-test and go steady.
 
 ## 1. Check axis directions — one axis at a time
 
@@ -24,11 +48,13 @@ If an axis moves the wrong way, invert its `dir_pin` in `printer.cfg` (add or re
 ## 2. Endstops
 
 ```
-QUERY_ENDSTOPS         ; press each switch by hand, re-run, confirm TRIGGERED changes
+QUERY_ENDSTOPS         ; press X and Y switches by hand, re-run, confirm TRIGGERED changes
 G28 X
 G28 Y
-G28 Z                  ; nozzle over the bed, hand on the power switch
 ```
+
+Do **not** `G28 Z` until section 0b passed and section 5 is set up. With `probe:z_virtual_endstop`
+the stock Z limit switch is no longer wired into anything.
 
 ## 3. PID tune both heaters
 
@@ -53,13 +79,65 @@ under-extrude.
 3. Measure remaining distance to the inlet. Should be 20 mm.
 4. New value = `old_rotation_distance * actual_extruded / 100`.
 
-## 5. Bed level and Z offset
+## 5. Probe offsets, bed level, Z offset
 
-Stock (no probe): mesh is manual. Level the four corners with paper, then
-`Z_OFFSET_APPLY_ENDSTOP` after a first-layer test.
+Order matters here. Do all four, in order.
 
-With a BLTouch/CR-Touch: add the `[bltouch]` and `[bed_mesh]` sections (commented in the
-template), then `PROBE_CALIBRATE` → `TESTZ` → `ACCEPT` → `SAVE_CONFIG`, then `BED_MESH_CALIBRATE`.
+### 5a. Measure the probe's X/Y offset
+
+The `x_offset: -44 / y_offset: -9` in the template is a **guess based on the common Creality
+mount**. Measure yours:
+
+- With the printer off, measure horizontally from the nozzle tip to the centre of the probe pin.
+- Probe to the **left** of the nozzle → negative `x_offset`. Probe **toward the front** →
+  negative `y_offset`.
+- A few mm of error here shows up as a mesh that doesn't match the bed. Get it within ~1 mm.
+
+If you change the offsets, re-check `[safe_z_home] home_xy_position` and `[bed_mesh] mesh_max`
+so the probe still lands on the bed at every point.
+
+### 5b. Mechanically level the bed first
+
+A probe compensates for a bad bed; it doesn't fix one. Level the knobs first:
+
+```
+G28
+SCREWS_TILT_CALCULATE
+```
+
+Klipper prints per-screw instructions like `front left : 01:30 CW`. Adjust, re-run, repeat until
+all four read within ~5 minutes of the target. This is much faster and more accurate than paper.
+
+### 5c. Probe Z offset
+
+```
+G28
+PROBE_CALIBRATE
+```
+Then jog down with `TESTZ Z=-1`, `TESTZ Z=-0.1`, `TESTZ Z=+0.02` until a sheet of paper drags
+slightly under the nozzle. Then:
+```
+ACCEPT
+SAVE_CONFIG
+```
+
+Fine-tune during a first layer with `SET_GCODE_OFFSET Z_ADJUST=-0.01 MOVE=1`, then
+`Z_OFFSET_APPLY_PROBE` + `SAVE_CONFIG` to make it permanent.
+
+### 5d. Bed mesh
+
+```
+G28
+BED_MESH_CALIBRATE
+SAVE_CONFIG
+```
+This saves a `default` profile, which `START_PRINT` loads on every job. Re-run it after any
+bed, spring, or build-sheet change — not before every print.
+
+> If a machine turns out to be **stock (no probe)**: switch its `[stepper_z]` to block (B) in
+> `printer.cfg`, delete the `[bltouch]`/`[safe_z_home]`/`[bed_mesh]`/`[screws_tilt_adjust]`
+> sections, drop the `BED_MESH_PROFILE LOAD` line from `START_PRINT`, then level with paper and
+> use `Z_OFFSET_APPLY_ENDSTOP` instead of `Z_OFFSET_APPLY_PROBE`.
 
 ## 6. Input shaper (optional but worth it)
 

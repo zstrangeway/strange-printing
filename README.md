@@ -1,7 +1,8 @@
 # strange-printing
 
-Workspace for building and running a small 3D print farm: **3x Creality Ender 3 V2**, driven by
-**Klipper** instances hosted in **Proxmox LXC containers**, sliced with **OrcaSlicer**.
+Workspace for building and running a small 3D print farm: **3x Creality Ender 3 V2** (4.2.2
+mainboards, BLTouch), driven by **Klipper** instances hosted in **Proxmox LXC containers** on a
+**Lenovo ThinkCentre M710s**, sliced with **OrcaSlicer**.
 
 This repo is the source of truth for configuration, runbooks, and the state of the build.
 It is documentation + config, not a deployable app.
@@ -10,7 +11,7 @@ It is documentation + config, not a deployable app.
 
 ```
                     ┌─────────────────────────────────────────────┐
-                    │  Proxmox VE host  (bare metal mini-PC)       │
+                    │  Proxmox VE host  (ThinkCentre M710s SFF)    │
                     │                                             │
    Workstation      │  ┌──────────────┐ ┌──────────────┐ ┌───────┐│
    ┌──────────┐     │  │ LXC 201      │ │ LXC 202      │ │ 203   ││

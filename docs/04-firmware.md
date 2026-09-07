@@ -1,4 +1,4 @@
-# Klipper firmware for the Creality 4.2.2 / 4.2.7 board
+# Klipper firmware for the Creality 4.2.2 board
 
 Klipper is two halves: the host process (`klippy`, in the LXC) and firmware on the printer's
 mainboard. You build the firmware in the container and flash it via microSD.
@@ -12,7 +12,9 @@ cd ~/klipper
 make menuconfig
 ```
 
-Select **exactly** this for a stock Ender 3 V2 (4.2.2 or 4.2.7):
+All three printers are 4.2.2, so this is **one build, flashed three times**.
+
+Select exactly this:
 
 | Option | Value |
 |---|---|
@@ -28,7 +30,10 @@ Notes:
 - The USB port on these boards goes through a **CH340 chip wired to USART1** — it is *not* native
   USB. Selecting a USB interface produces firmware that never enumerates. This is the single most
   common flashing mistake on this board.
-- Some later boards ship a **GD32F303** instead of the STM32F103. The above config works unchanged.
+- Some 4.2.2 boards ship a **GD32F303** clone instead of the STM32F103. The above config works
+  unchanged — you do not need to know which one you have.
+- The 4.2.2's TMC2208 drivers are in standalone mode (no UART), so there is nothing driver-related
+  to configure in the firmware or in `printer.cfg`.
 - Menu label wording drifts between Klipper versions ("28KiB bootloader" has historically also
   appeared as "27KiB"). Pick the bootloader offset entry that mentions the Creality/stock
   bootloader; if there's exactly one non-`no bootloader` option in the 24–32 KiB range, that's it.

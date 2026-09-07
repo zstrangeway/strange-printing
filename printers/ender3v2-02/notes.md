@@ -2,7 +2,7 @@
 
 ## Identity
 
-- Mainboard revision:
+- Mainboard revision: 4.2.2
 - MCU:
 - Container: CTID / hostname / IP
 - Host USB port label:
@@ -24,10 +24,12 @@
 
 | Value | Result | Date |
 |---|---|---|
+| Probe fitted? (BLTouch / CR-Touch / none) | | |
+| Probe x_offset / y_offset (measured) | | |
+| Probe z_offset | | |
 | Extruder rotation_distance | | |
 | Extruder PID | | |
 | Bed PID | | |
-| Z offset | | |
 | Input shaper X / Y | | |
 
 ## Quirks

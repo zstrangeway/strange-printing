@@ -19,6 +19,18 @@
 | Privileged vs unprivileged LXC | — | Unprivileged + explicit device passthrough. Privileged is easier but a worse default. |
 | Slicer→printer path | Upload via Moonraker API / manual | Moonraker API from OrcaSlicer |
 | Spoolman / Obico | Add later | Skip for initial bring-up |
+| Host boot disk | keep HDD / add SSD | **Add an SSD** if the M710s still has its spinning drive — reinstalling later means rebuilding every container |
+| Moonraker trusted_clients | all RFC1918 / just your subnet | Defaults work; narrow once the subnet is known (`docs/07-networking.md`) |
+| Mesh per print | probe every job / load saved | Load saved. ~90 s/job back; re-probe on hardware changes only. |
+
+## Known hardware (confirmed)
+
+- **Mainboards:** all three are Creality **4.2.2** — TMC2208 standalone, one firmware build for
+  all three, no `[tmc2208]` config sections, no sensorless homing.
+- **Probe:** BLTouch/CR-Touch. Configs currently assume **all three** have one — confirm, because
+  a stock machine running the probe config will crash its nozzle on first `G28`.
+- **Host:** Lenovo ThinkCentre M710s SFF (`10M70030US`), Kaby Lake. Comfortably oversized for
+  three Klipper instances.
 
 ## Known risks specific to this build
 
@@ -35,3 +47,6 @@
    the PTFE tube are all consumables. Budget for replacements before blaming Klipper for bad prints.
 5. **Single point of failure.** One host = all three printers down if it dies. Acceptable for a
    home farm; know that it's the tradeoff you're making versus a Pi per printer.
+6. **The probe is the Z endstop.** With `probe:z_virtual_endstop` there is no mechanical backstop —
+   a BLTouch that fails to deploy sends the nozzle into the bed. Run the `BLTOUCH_DEBUG` checks in
+   `docs/05` before the first `G28 Z` on every machine, and again after any rewiring.

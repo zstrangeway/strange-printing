@@ -27,6 +27,36 @@ container's `lxc.mount.entry`.
 (or absent) serial numbers, so all three printers can collide on one `by-id` name — the container
 would silently attach to the wrong printer.
 
+## Finding your LAN subnet
+
+`printers/*/moonraker.conf` currently trusts all RFC1918 ranges (`192.168.0.0/16`, `10.0.0.0/8`,
+`172.16.0.0/12`). That **works** on any home network without you knowing anything — it's the
+Moonraker default. It's also broader than it needs to be: anything on your LAN can drive the
+printers without a key.
+
+To narrow it, find your actual subnet:
+
+```bash
+# on the Proxmox host, or any Linux box on the LAN
+ip -4 addr show | grep inet
+# -> inet 192.168.1.50/24  means your subnet is 192.168.1.0/24
+```
+
+macOS: `ipconfig getifaddr en0` then check the router. Windows: `ipconfig` → "IPv4 Address" and
+"Subnet Mask" (255.255.255.0 = /24).
+
+Then replace the three RFC1918 lines in each `moonraker.conf` with just your subnet, e.g.:
+
+```
+trusted_clients:
+    192.168.1.0/24
+    127.0.0.0/8
+    ::1/128
+```
+
+Worth doing if you have guests, IoT devices, or roommates on the same network. Skippable if the
+LAN is just you — the printers are not reachable from the internet either way.
+
 ## Access
 
 Everything is LAN-only by design. If you later want remote access, use a VPN (WireGuard/Tailscale)

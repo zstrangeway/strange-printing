@@ -1,5 +1,24 @@
 # Proxmox host setup
 
+Host: **Lenovo ThinkCentre M710s** (SFF), model `10M70030US`.
+
+## BIOS first
+
+Reboot, press **F1** for BIOS setup. Set these before installing anything:
+
+| Setting | Value | Why |
+|---|---|---|
+| Intel Virtualization Technology (VT-x) | **Enabled** | Proxmox needs it for VMs. LXC doesn't, but you'll want the option. |
+| VT-d | **Enabled** | Needed if you ever pass a PCIe device through |
+| Secure Boot | **Disabled** | Proxmox's kernel isn't signed for it |
+| Boot mode | **UEFI** | |
+| **After Power Loss** | **Power On** | A print farm host must come back on its own after an outage. Default is "Power Off". |
+| Wake on LAN | Enabled (optional) | Lets you power the farm on remotely |
+| Fan control | Quiet/Balanced | It'll be sitting near the printers |
+
+The "After Power Loss → Power On" one is easy to skip and the one you'll regret. Containers are
+already set `--onboot 1`, so the whole farm recovers unattended from a power blip.
+
 ## Install
 
 1. Flash the Proxmox VE ISO to a USB stick, boot the mini-PC, install to the internal disk.
@@ -29,8 +48,18 @@ pveam download local debian-12-standard_12.7-1_amd64.tar.zst
 
 ```bash
 # 3. Useful host tools
-apt install -y usbutils lsof
+apt install -y usbutils lsof lm-sensors
 ```
+
+```bash
+# 4. Confirm what this box actually is
+lscpu | grep 'Model name'
+free -h
+lsblk -o NAME,SIZE,ROTA,MODEL     # ROTA=1 -> spinning disk, consider an SSD
+```
+
+If the boot device is a spinning HDD, strongly consider a SATA SSD before going further —
+reinstalling Proxmox later means rebuilding every container. See `docs/01-hardware-inventory.md`.
 
 ## Identify the printer USB ports before creating containers
 
