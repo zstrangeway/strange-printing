@@ -148,8 +148,13 @@ SET_VELOCITY_LIMIT ACCEL=...
 TUNING_TOWER COMMAND=SET_VELOCITY_LIMIT PARAMETER=ACCEL START=1500 FACTOR=500
 ```
 
-Print `docs/assets/ringing_tower.stl` (from the Klipper repo). Measure, then set
-`[input_shaper]` accordingly.
+Print the ringing tower from the Klipper repo — it ships with your checkout at
+`~/klipper/docs/prints/ringing_tower.stl` inside the container. Measure the band where ringing
+disappears, compute the frequency, then set `[input_shaper]`. Full procedure:
+`~/klipper/docs/Resonance_Compensation.md`.
+
+Skip this until all three printers are printing reliably. It's a quality improvement, not a
+bring-up step.
 
 ## 7. First real print
 

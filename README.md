@@ -37,6 +37,7 @@ container instead of the farm.
 | `printers/` | Per-printer `printer.cfg` / `moonraker.conf` and machine-specific notes |
 | `printers/_template/` | Starting point for a new machine |
 | `scripts/` | Host-side helper scripts (container creation, stack bootstrap) |
+| `slicer/` | Exported OrcaSlicer profiles, kept in sync across machines |
 
 ## Docs index
 
@@ -48,6 +49,7 @@ container instead of the farm.
 6. [`docs/06-orcaslicer.md`](docs/06-orcaslicer.md) — slicer setup and sending jobs to Moonraker
 7. [`docs/07-networking.md`](docs/07-networking.md) — IPs, ports, naming
 8. [`docs/08-runbook.md`](docs/08-runbook.md) — day-to-day ops, backup, recovery
+9. [`docs/09-power-and-layout.md`](docs/09-power-and-layout.md) — power budget, UPS, fire safety, physical layout
 
 ## Status
 

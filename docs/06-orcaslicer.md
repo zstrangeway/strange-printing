@@ -57,7 +57,7 @@ Machine-specific compensation (a printer that runs cool, one with a worn nozzle)
 printer's `printer.cfg` — e.g. a `[gcode_macro]` temperature offset — so the slicer profile stays
 universal.
 
-Export finished profiles to `docs/orcaslicer-profiles/` and commit them.
+Export finished profiles to `slicer/orcaslicer/` and commit them — see `slicer/README.md`.
 
 ## Sending a job
 
