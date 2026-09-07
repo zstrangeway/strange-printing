@@ -50,16 +50,51 @@ scp root@<container-ip>:/home/klipper/printer_data/config/printer.cfg printers/e
 
 An uncommitted `SAVE_CONFIG` block is the thing that gets lost.
 
-## Open questions (as of the last session)
+## Where the build actually is
 
-1. **How many printers actually have a BLTouch?** All three configs currently assume one. A stock
-   machine running the probe config drives its nozzle into the bed on the first `G28`. This is
-   the highest-consequence open item.
-2. **Probe X/Y offsets.** `-44 / -9` in the configs is the common Creality-mount value and a
-   guess. Must be measured per machine.
-3. **Does the M710s still have a spinning boot disk?** If so, fit an SSD before installing
-   Proxmox — reinstalling later means rebuilding every container.
-4. **LAN subnet** — `moonraker.conf` trusts all RFC1918 ranges. Works; narrower is better.
+Established in the first session, worth not re-deriving:
+
+- **Proxmox is already installed** on the M710s. No container has been created yet.
+- **The mainboards already carry Klipper firmware** from a previous setup — an old version.
+- **The Raspberry Pi hosts are gone.** There are no `printer.cfg` files to recover. Every
+  calibration value in this repo is a starting point that has never been measured on these
+  machines.
+- Because host and MCU Klipper versions must match and there is no surviving host,
+  **all three boards need reflashing** with a build matching whatever version the new
+  containers run. `docs/04-firmware.md` applies.
+- Printer 3 has **dual Z motors** (Y-splitter off the single Z driver on the 4.2.2 — there is no
+  second Z driver, so this stays one `[stepper_z]`, no `[z_tilt]`, gantry levelled by hand) and
+  **no BLTouch installed yet**, though one is on hand for it.
+- Printers 1 and 2 have BLTouch fitted.
+
+## Open questions
+
+1. **Probe X/Y offsets.** `-44 / -9` is the common Creality-mount value and a guess. Measure per
+   machine.
+2. **Is the M710s boot disk spinning?** `lsblk -o NAME,SIZE,ROTA,MODEL`. Proxmox is already
+   installed, so replacing it now means a reinstall — weigh it before building containers on top.
+3. **LAN subnet** — `moonraker.conf` trusts all RFC1918 ranges. Works; narrower is better.
+
+## What to do next
+
+One printer, end to end, before touching the other two or writing any automation:
+
+1. Create one LXC, pass through printer 1's USB device by `by-path`
+2. Install Klipper + Moonraker + Fluidd (KIAUH is fine and fast; don't automate yet)
+3. Build firmware in that container, flash printer 1 by SD card
+4. Start from Klipper's own `config/printer-creality-ender3-v2-2020.cfg` in the checkout —
+   **do not hand-write `printer.cfg` or the standard macros**, they ship working
+5. Calibrate, commit the result, then repeat
+
+## A note on the repo's current state
+
+The first session overbuilt. `ansible/` is an untested Ansible tree written before a single
+container existed; `76d64ae` is its commit and reverting that returns to the earlier static
+docs. Several `docs/` pages still link to files that commit deleted, and `docs/10-iac.md` is
+referenced but never written. Nothing here has run against hardware.
+
+Fix or delete it as convenient — but don't treat it as working infrastructure, and don't extend
+it before one printer prints.
 
 ## Conventions
 
