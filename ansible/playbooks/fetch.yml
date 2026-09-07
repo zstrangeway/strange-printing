@@ -1,0 +1,31 @@
+---
+# Pulls each container's live printer.cfg back into ansible/fetched/.
+#
+# Why this exists: Klipper's SAVE_CONFIG writes calibration results (PID values,
+# probe z_offset, bed mesh) into printer.cfg *inside the container*. Ansible does
+# not know about them. Run this after calibrating, diff the result, and promote
+# the numbers into inventory/host_vars/ so the next config.yml run reproduces
+# them. See docs/10-iac.md.
+- name: Fetch live configs for promotion into inventory
+  hosts: printers
+  gather_facts: false
+  tasks:
+    - name: Fetch printer.cfg
+      ansible.builtin.fetch:
+        src: "{{ klipper_data }}/config/printer.cfg"
+        dest: "fetched/{{ printer_id }}/printer.cfg"
+        flat: true
+
+    - name: Show the SAVE_CONFIG block, if any
+      ansible.builtin.shell:
+        cmd: "sed -n '/#\\*# <---------------------- SAVE_CONFIG/,$p' {{ klipper_data }}/config/printer.cfg"
+      register: autosave
+      changed_when: false
+      failed_when: false
+
+    - name: Report unpromoted calibration values
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: {{ 'SAVE_CONFIG block present — promote these into host_vars'
+             if autosave.stdout | length > 0 else 'no SAVE_CONFIG block' }}
+          {{ autosave.stdout }}

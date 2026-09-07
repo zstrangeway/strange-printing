@@ -1,0 +1,17 @@
+---
+# Printer 3 is the odd one out:
+#   - dual Z motors (Y-splitter off the single 4.2.2 Z driver)
+#   - BLTouch owned but NOT YET INSTALLED
+#
+# When the probe goes on, change `probe: none` to `probe: bltouch`, run
+# `ansible-playbook playbooks/config.yml --limit klipper-03`, then do the
+# probe bring-up in docs/05. That one-line change is the whole point of
+# templating these configs.
+printer_id: ender3v2-03
+ctid: 203
+container_ip: 192.168.1.203/24            # CHANGE ME
+usb_by_path: "/dev/serial/by-path/CHANGEME"
+
+printer:
+  probe: none
+  dual_z: true

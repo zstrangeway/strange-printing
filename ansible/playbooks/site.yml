@@ -1,0 +1,10 @@
+---
+# Full build. Safe to re-run; every role is idempotent.
+#
+#   ansible-playbook playbooks/site.yml
+#
+# Provisioning must land before the containers are reachable over SSH, so this
+# is two passes rather than one.
+- import_playbook: provision.yml
+- import_playbook: stack.yml
+- import_playbook: config.yml

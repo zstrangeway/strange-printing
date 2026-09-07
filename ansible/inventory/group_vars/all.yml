@@ -1,0 +1,23 @@
+---
+# Proxmox connection. Create an API token on the host:
+#   pveum user token add root@pam ansible --privsep 0
+# then put the secret in a vault file or the PROXMOX_TOKEN env var — never here.
+proxmox_api_host: "{{ hostvars['pve-01'].ansible_host }}"
+proxmox_node: pve-01
+proxmox_api_user: root@pam
+proxmox_api_token_id: ansible
+proxmox_api_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN') }}"
+
+# LXC defaults
+lxc_template: "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
+lxc_storage: local-lvm
+lxc_disk_gb: 8
+lxc_cores: 2
+lxc_memory_mb: 2048
+lxc_swap_mb: 512
+lxc_bridge: vmbr0
+lxc_gateway: 192.168.1.1                  # CHANGE ME
+
+# Where the container presents its bound USB device. Identical on every printer
+# by design — see CLAUDE.md.
+device_path: /dev/printer

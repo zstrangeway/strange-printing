@@ -1,0 +1,19 @@
+# ANSIBLE MANAGED — edits will be overwritten
+[Unit]
+Description=Moonraker API server for Klipper
+Documentation=https://moonraker.readthedocs.io/
+After=network-online.target
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User={{ klipper_user }}
+SupplementaryGroups=moonraker-admin
+RemainAfterExit=no
+WorkingDirectory={{ klipper_home }}/moonraker
+ExecStart={{ klipper_home }}/moonraker-env/bin/python {{ klipper_home }}/moonraker/moonraker/moonraker.py -d {{ klipper_data }}
+Restart=always
+RestartSec=10

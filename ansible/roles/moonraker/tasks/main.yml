@@ -1,0 +1,52 @@
+---
+- name: Install Moonraker dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-virtualenv
+      - python3-dev
+      - libopenjp2-7
+      - libsodium-dev
+      - zlib1g-dev
+      - libjpeg-dev
+      - curl
+      - build-essential
+      - liblmdb-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Clone Moonraker
+  ansible.builtin.git:
+    repo: "{{ moonraker_repo }}"
+    dest: "{{ klipper_home }}/moonraker"
+    version: "{{ moonraker_version }}"
+    depth: 1
+  become: true
+  become_user: "{{ klipper_user }}"
+  notify: Restart moonraker
+
+- name: Create the moonraker virtualenv
+  ansible.builtin.pip:
+    requirements: "{{ klipper_home }}/moonraker/scripts/moonraker-requirements.txt"
+    virtualenv: "{{ klipper_home }}/moonraker-env"
+    virtualenv_command: "python3 -m venv"
+  become: true
+  become_user: "{{ klipper_user }}"
+  notify: Restart moonraker
+
+- name: Install the moonraker systemd unit
+  ansible.builtin.template:
+    src: moonraker.service.j2
+    dest: /etc/systemd/system/moonraker.service
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart moonraker
+
+- name: Enable moonraker
+  ansible.builtin.systemd:
+    name: moonraker
+    enabled: true
+    daemon_reload: true

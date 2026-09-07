@@ -1,0 +1,67 @@
+---
+# Shared by every printer container.
+
+klipper_user: klipper
+klipper_home: "/home/klipper"
+klipper_data: "/home/klipper/printer_data"
+
+klipper_repo: https://github.com/Klipper3d/klipper.git
+klipper_version: master                   # pin to a tag/commit for a stable farm
+moonraker_repo: https://github.com/Arksine/moonraker.git
+moonraker_version: master
+fluidd_version: latest
+
+# Moonraker access. Narrow this once the LAN subnet is known.
+moonraker_trusted_clients:
+  - 10.0.0.0/8
+  - 127.0.0.0/8
+  - 169.254.0.0/16
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+  - FE80::/10
+  - ::1/128
+
+# ---------------------------------------------------------------------------
+# Printer defaults. Everything here is true of a stock Ender 3 V2 on a 4.2.2
+# board; per-machine overrides live in host_vars/.
+# ---------------------------------------------------------------------------
+printer:
+  bed_size: 235
+  max_z: 250
+
+  # probe: bltouch | none
+  probe: bltouch
+
+  # dual_z: true means a Y-splitter kit driving two Z motors from the single
+  # Z output on the 4.2.2. It does NOT add a [stepper_z1] — see CLAUDE.md.
+  dual_z: false
+
+  velocity:
+    max_velocity: 300
+    max_accel: 3000
+    max_z_velocity: 5
+    max_z_accel: 100
+
+  # MEASURED VALUES. Defaults are starting points, not truth.
+  # Promote real numbers here after calibration — see docs/10-iac.md.
+  extruder:
+    rotation_distance: 34.406      # verify: 100mm extrusion test
+    pid_kp: 21.527
+    pid_ki: 1.063
+    pid_kd: 108.982
+    max_temp: 250
+  bed:
+    pid_kp: 54.027
+    pid_ki: 0.770
+    pid_kd: 948.182
+    max_temp: 130
+  probe_offsets:
+    x: -44.0                       # MEASURE per mount
+    y: -9.0                        # MEASURE per mount
+    z: 0.0                         # from PROBE_CALIBRATE
+  input_shaper:
+    enabled: false
+    freq_x: 0
+    freq_y: 0
+    type: mzv
+  runout_sensor: false

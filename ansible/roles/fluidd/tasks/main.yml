@@ -1,0 +1,60 @@
+---
+- name: Install nginx and unzip
+  ansible.builtin.apt:
+    name: [nginx, unzip]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the fluidd directory
+  ansible.builtin.file:
+    path: "{{ klipper_home }}/fluidd"
+    state: directory
+    owner: "{{ klipper_user }}"
+    group: "{{ klipper_user }}"
+    mode: "0755"
+
+- name: Download Fluidd
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/fluidd-core/fluidd/releases/{{
+        'latest/download' if fluidd_version == 'latest'
+        else 'download/' + fluidd_version }}/fluidd.zip
+    dest: /tmp/fluidd.zip
+    mode: "0644"
+  register: fluidd_dl
+
+- name: Unpack Fluidd
+  ansible.builtin.unarchive:
+    src: /tmp/fluidd.zip
+    dest: "{{ klipper_home }}/fluidd"
+    remote_src: true
+    owner: "{{ klipper_user }}"
+    group: "{{ klipper_user }}"
+  when: fluidd_dl.changed
+
+- name: Remove the default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
+
+- name: Install the Fluidd nginx site
+  ansible.builtin.template:
+    src: fluidd.nginx.j2
+    dest: /etc/nginx/sites-available/fluidd
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Enable the Fluidd site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/fluidd
+    dest: /etc/nginx/sites-enabled/fluidd
+    state: link
+  notify: Restart nginx
+
+- name: Enable nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started

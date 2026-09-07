@@ -1,0 +1,30 @@
+---
+# Creates the LXCs and binds one USB device into each. Runs against the
+# Proxmox host, not the containers.
+- name: Provision printer containers
+  hosts: proxmox
+  gather_facts: true
+  tasks:
+    - name: Fail early if the Proxmox API token is not set
+      ansible.builtin.assert:
+        that: proxmox_api_token_secret | length > 0
+        fail_msg: >-
+          PROXMOX_TOKEN is empty. Create a token with
+          `pveum user token add root@pam ansible --privsep 0`
+          and export it before running this play.
+
+    - name: Ensure the container template is present
+      ansible.builtin.command:
+        cmd: "pveam download local {{ lxc_template | regex_replace('^local:vztmpl/', '') }}"
+      args:
+        creates: "/var/lib/vz/template/cache/{{ lxc_template | regex_replace('^local:vztmpl/', '') }}"
+
+    - name: Provision each printer container
+      ansible.builtin.include_role:
+        name: proxmox_lxc
+      vars:
+        lxc_ctid: "{{ hostvars[item].ctid }}"
+        lxc_hostname: "{{ item }}"
+        lxc_ip: "{{ hostvars[item].container_ip }}"
+        lxc_usb_by_path: "{{ hostvars[item].usb_by_path }}"
+      loop: "{{ groups['printers'] }}"

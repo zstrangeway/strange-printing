@@ -1,0 +1,104 @@
+---
+- name: "Create container {{ lxc_ctid }} ({{ lxc_hostname }})"
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ lxc_ctid }}"
+    hostname: "{{ lxc_hostname }}"
+    ostemplate: "{{ lxc_template }}"
+    storage: "{{ lxc_storage }}"
+    disk: "{{ lxc_disk_gb }}"
+    cores: "{{ lxc_cores }}"
+    memory: "{{ lxc_memory_mb }}"
+    swap: "{{ lxc_swap_mb }}"
+    netif:
+      net0: "name=eth0,bridge={{ lxc_bridge }},ip={{ lxc_ip }},gw={{ lxc_gateway }}"
+    features:
+      - nesting=1
+    unprivileged: true
+    onboot: true
+    pubkey: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
+    state: present
+
+- name: "Verify the USB device exists on the host before binding it"
+  ansible.builtin.stat:
+    path: "{{ lxc_usb_by_path }}"
+  register: usb_dev
+
+- name: "Refuse to bind a device that is not there"
+  ansible.builtin.fail:
+    msg: >-
+      {{ lxc_usb_by_path }} does not exist on {{ inventory_hostname }}.
+      Is printer {{ lxc_hostname }} powered on and plugged in?
+      List candidates with: ls -l /dev/serial/by-path/
+  when: not usb_dev.stat.exists
+
+# The proxmox module has no knob for raw lxc.* keys, so the passthrough goes in
+# by hand. blockinfile keeps it idempotent and re-runnable.
+- name: "Bind exactly one USB device into {{ lxc_ctid }}"
+  ansible.builtin.blockinfile:
+    path: "/etc/pve/lxc/{{ lxc_ctid }}.conf"
+    marker: "# {mark} ANSIBLE MANAGED — printer USB passthrough"
+    block: |
+      # 188 = ttyUSB (CH340), 166 = ttyACM (native-USB MCUs)
+      lxc.cgroup2.devices.allow: c 188:* rwm
+      lxc.cgroup2.devices.allow: c 166:* rwm
+      # One device only. Presented inside the container at a fixed path so every
+      # printer.cfg carries an identical [mcu] serial line.
+      lxc.mount.entry: {{ lxc_usb_by_path }} {{ device_path | regex_replace('^/', '') }} none bind,optional,create=file
+  register: passthrough
+
+- name: "Allow the container to open the serial device"
+  ansible.builtin.copy:
+    dest: /etc/udev/rules.d/99-klipper-lxc.rules
+    mode: "0644"
+    content: |
+      # WCH CH340 on Creality 4.2.x boards. 0666 on a dedicated farm host is a
+      # deliberate tradeoff against running these containers privileged.
+      SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", MODE="0666"
+  register: udev_rule
+
+- name: Reload udev rules
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  loop:
+    - udevadm control --reload-rules
+    - udevadm trigger
+  when: udev_rule.changed
+  changed_when: true
+
+- name: "Restart {{ lxc_ctid }} to pick up the passthrough"
+  ansible.builtin.command:
+    cmd: "pct restart {{ lxc_ctid }}"
+  when: passthrough.changed
+  changed_when: true
+
+- name: "Ensure {{ lxc_ctid }} is running"
+  community.general.proxmox:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ lxc_ctid }}"
+    state: started
+
+- name: "Confirm {{ device_path }} is visible inside {{ lxc_ctid }}"
+  ansible.builtin.command:
+    cmd: "pct exec {{ lxc_ctid }} -- test -e {{ device_path }}"
+  register: dev_check
+  changed_when: false
+  failed_when: false
+  retries: 6
+  delay: 5
+  until: dev_check.rc == 0
+
+- name: "Warn if the device did not appear"
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: {{ device_path }} is missing inside {{ lxc_ctid }}. Klipper will
+      not connect. Check the udev permissions step in docs/03-klipper-lxc.md.
+  when: dev_check.rc != 0

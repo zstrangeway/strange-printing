@@ -1,0 +1,33 @@
+# ANSIBLE MANAGED — generated from inventory. Edits will be overwritten.
+[server]
+host: 0.0.0.0
+port: 7125
+klippy_uds_address: {{ klipper_data }}/comms/klippy.sock
+
+[file_manager]
+enable_object_processing: True
+
+[authorization]
+trusted_clients:
+{% for c in moonraker_trusted_clients %}
+    {{ c }}
+{% endfor %}
+cors_domains:
+    *.local
+    *.lan
+    http://*:*
+    https://*:*
+
+[octoprint_compat]
+
+[history]
+
+[update_manager]
+channel: dev
+refresh_interval: 168
+
+[update_manager fluidd]
+type: web
+channel: stable
+repo: fluidd-core/fluidd
+path: {{ klipper_home }}/fluidd

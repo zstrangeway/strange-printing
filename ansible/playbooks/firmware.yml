@@ -1,0 +1,70 @@
+---
+# Builds the MCU firmware non-interactively from the committed kconfig.
+# All three printers are 4.2.2, so this is one build used three times.
+#
+# Flashing still needs a physical microSD card — see docs/04-firmware.md.
+- name: Build Klipper MCU firmware
+  hosts: printers[0]
+  gather_facts: true
+  vars:
+    kconfig_src: "../firmware/ender3v2-4.2.2.config"
+    kconfig_dst: "{{ klipper_home }}/klipper/.config"
+  tasks:
+    - name: Install ARM cross-compiler
+      ansible.builtin.apt:
+        name:
+          - gcc-arm-none-eabi
+          - binutils-arm-none-eabi
+          - libnewlib-arm-none-eabi
+        state: present
+        update_cache: true
+
+    - name: Install the committed kconfig fragment
+      ansible.builtin.copy:
+        src: "{{ kconfig_src }}"
+        dest: "{{ kconfig_dst }}"
+        owner: "{{ klipper_user }}"
+        group: "{{ klipper_user }}"
+        mode: "0644"
+
+    - name: Resolve defaults for unset symbols
+      ansible.builtin.command:
+        cmd: make olddefconfig
+        chdir: "{{ klipper_home }}/klipper"
+      become: true
+      become_user: "{{ klipper_user }}"
+      changed_when: true
+
+    - name: Show the resolved build options
+      ansible.builtin.shell:
+        cmd: >-
+          grep -E 'CONFIG_(MACH_STM32F103|STM32_FLASH_START|STM32_CLOCK_REF|
+          STM32F103_SERIAL|SERIAL_BAUD)' .config
+        chdir: "{{ klipper_home }}/klipper"
+      register: resolved
+      changed_when: false
+
+    - name: Build options in effect
+      ansible.builtin.debug:
+        var: resolved.stdout_lines
+
+    - name: Build
+      ansible.builtin.command:
+        cmd: make
+        chdir: "{{ klipper_home }}/klipper"
+      become: true
+      become_user: "{{ klipper_user }}"
+      changed_when: true
+
+    - name: Fetch klipper.bin with a date-stamped name
+      ansible.builtin.fetch:
+        src: "{{ klipper_home }}/klipper/out/klipper.bin"
+        dest: "../firmware/build/firmware-4.2.2-{{ ansible_date_time.date }}.bin"
+        flat: true
+
+    - name: Next step
+      ansible.builtin.debug:
+        msg: >-
+          Built firmware/build/firmware-4.2.2-{{ ansible_date_time.date }}.bin —
+          copy to a FAT32 microSD under a filename the board has never seen,
+          then power-cycle each printer with the card inserted.

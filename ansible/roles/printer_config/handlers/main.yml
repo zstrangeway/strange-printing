@@ -1,0 +1,7 @@
+---
+- name: Restart klipper services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop: [klipper, moonraker]
+  failed_when: false

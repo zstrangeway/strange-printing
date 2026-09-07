@@ -1,0 +1,10 @@
+---
+# Renders printer.cfg and moonraker.conf from host_vars and restarts services.
+#
+# Run this after changing any value in inventory/. Always dry-run first:
+#   ansible-playbook playbooks/config.yml --check --diff
+- name: Deploy printer configuration
+  hosts: printers
+  gather_facts: true
+  roles:
+    - printer_config

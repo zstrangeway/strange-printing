@@ -1,0 +1,35 @@
+---
+- name: Warn about unpromoted SAVE_CONFIG values
+  ansible.builtin.shell:
+    cmd: "grep -c '^#\\*#' {{ klipper_data }}/config/printer.cfg || true"
+  register: autosave_lines
+  changed_when: false
+  failed_when: false
+
+- name: "Heads up: this run will discard Klipper's autosave block"
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} has a SAVE_CONFIG block with
+      {{ autosave_lines.stdout | trim }} lines. Rendering printer.cfg replaces it.
+      Run playbooks/fetch.yml first and promote those values into host_vars,
+      or you will lose them.
+  when: (autosave_lines.stdout | trim | int) > 2
+
+- name: Render printer.cfg
+  ansible.builtin.template:
+    src: printer.cfg.j2
+    dest: "{{ klipper_data }}/config/printer.cfg"
+    owner: "{{ klipper_user }}"
+    group: "{{ klipper_user }}"
+    mode: "0644"
+    backup: true
+  notify: Restart klipper services
+
+- name: Render moonraker.conf
+  ansible.builtin.template:
+    src: moonraker.conf.j2
+    dest: "{{ klipper_data }}/config/moonraker.conf"
+    owner: "{{ klipper_user }}"
+    group: "{{ klipper_user }}"
+    mode: "0644"
+  notify: Restart klipper services

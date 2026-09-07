@@ -21,3 +21,9 @@ printer-*.cfg          # timestamped autosave backups Klipper writes
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Built firmware binaries — reproducible from the committed kconfig
+firmware/build/*.bin
+
+# Configs fetched from containers for promotion into inventory
+ansible/fetched/

@@ -1,0 +1,18 @@
+# ANSIBLE MANAGED — edits will be overwritten
+[Unit]
+Description=Klipper 3D printer firmware host process
+Documentation=https://www.klipper3d.org/
+After=network-online.target
+Wants=udev.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User={{ klipper_user }}
+RemainAfterExit=no
+WorkingDirectory={{ klipper_home }}/klipper
+ExecStart={{ klipper_home }}/klippy-env/bin/python {{ klipper_home }}/klipper/klippy/klippy.py {{ klipper_data }}/config/printer.cfg -l {{ klipper_data }}/logs/klippy.log -I {{ klipper_data }}/comms/klippy.serial -a {{ klipper_data }}/comms/klippy.sock
+Restart=always
+RestartSec=10

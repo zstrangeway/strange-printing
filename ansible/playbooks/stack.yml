@@ -1,0 +1,10 @@
+---
+# Installs Klipper, Moonraker and Fluidd inside each container.
+# Replaces KIAUH — same result, non-interactive and reproducible.
+- name: Install the printer stack
+  hosts: printers
+  gather_facts: true
+  roles:
+    - klipper
+    - moonraker
+    - fluidd

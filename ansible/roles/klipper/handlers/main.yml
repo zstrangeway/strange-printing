@@ -1,0 +1,12 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart klipper
+  ansible.builtin.systemd:
+    name: klipper
+    state: restarted
+  # Klipper legitimately fails to start until the MCU is flashed. Don't let
+  # that abort a run that is otherwise fine.
+  failed_when: false
